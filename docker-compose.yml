@@ -1,0 +1,64 @@
+services:
+  # 1. Target Cloud Microservice
+  target-service:
+    build:
+      context: ./target-service
+      dockerfile: Dockerfile
+    container_name: faultlens-target-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - NODE_ENV=production
+    restart: always # Cloud self-healing policy: auto-restarts container if process crashes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 2s
+    networks:
+      - faultlens-net
+
+  # 2. FaultLens Auditor & Monitoring Engine
+  auditor-backend:
+    build:
+      context: ./auditor-backend
+      dockerfile: Dockerfile
+    container_name: faultlens-auditor-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - TARGET_SERVICE_URL=http://target-service:5001 # Cloud Service Discovery via Docker DNS
+      - NODE_ENV=production
+    depends_on:
+      target-service:
+        condition: service_healthy
+    volumes:
+      - faultlens-data:/app/data # Persistent Cloud Volume for SQLite telemetry & incident audit logs
+    restart: unless-stopped
+    networks:
+      - faultlens-net
+
+  # 3. FaultLens Operations Console (React Dashboard)
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: faultlens-dashboard
+    ports:
+      - "5173:5173"
+    depends_on:
+      - auditor-backend
+    restart: unless-stopped
+    networks:
+      - faultlens-net
+
+volumes:
+  faultlens-data:
+    driver: local
+
+networks:
+  faultlens-net:
+    driver: bridge

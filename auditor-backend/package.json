@@ -1,0 +1,17 @@
+{
+  "name": "faultlens-auditor-backend",
+  "version": "1.0.0",
+  "description": "FaultLens active health prober, incident detector, and recovery auditor engine",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "keywords": ["cloud", "auditor", "monitoring", "chaos-engineering", "mttr"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
